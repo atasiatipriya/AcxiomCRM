@@ -1,0 +1,147 @@
+@model AcxiomCrm.Models.Opportunity
+
+@{
+    ViewData["Title"] = "Opportunity: " + Model.OpportunityName;
+
+    var stageBadge = Model.Stage switch
+    {
+        "Qualification" => "bg-primary",
+        "Proposal" => "bg-info text-dark",
+        "Negotiation" => "bg-warning text-dark",
+        "Won" => "bg-success",
+        "Lost" => "bg-danger",
+        _ => "bg-secondary"
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 fw-bold mb-1">@Model.OpportunityName</h2>
+        <span class="badge @stageBadge fs-6">@Model.Stage</span>
+        <span class="badge @(Model.Status == "Won" ? "bg-success" : Model.Status == "Lost" ? "bg-danger" : "bg-light text-dark border") fs-6 ms-1">@Model.Status</span>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Edit" asp-route-id="@Model.OpportunityId" class="btn btn-primary btn-sm">
+            <i class="bi bi-pencil me-1"></i> Edit Deal
+        </a>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Back to Pipeline
+        </a>
+    </div>
+</div>
+
+<div class="card mb-4 bg-light border-primary border-opacity-25">
+    <div class="card-body p-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class="small fw-semibold text-secondary">
+            <i class="bi bi-arrow-right-circle me-1"></i> Quick Stage Progression:
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            @if (Model.Stage != "Qualification" && Model.Status == "Open")
+            {
+                <form asp-action="ChangeStage" asp-route-id="@Model.OpportunityId" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="newStage" value="Qualification" />
+                    <button type="submit" class="btn btn-sm btn-outline-primary">Qualification</button>
+                </form>
+            }
+            @if (Model.Stage != "Proposal" && Model.Status == "Open")
+            {
+                <form asp-action="ChangeStage" asp-route-id="@Model.OpportunityId" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="newStage" value="Proposal" />
+                    <button type="submit" class="btn btn-sm btn-outline-info text-dark">Proposal</button>
+                </form>
+            }
+            @if (Model.Stage != "Negotiation" && Model.Status == "Open")
+            {
+                <form asp-action="ChangeStage" asp-route-id="@Model.OpportunityId" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="newStage" value="Negotiation" />
+                    <button type="submit" class="btn btn-sm btn-outline-warning text-dark">Negotiation</button>
+                </form>
+            }
+            @if (Model.Status != "Won")
+            {
+                <form asp-action="ChangeStage" asp-route-id="@Model.OpportunityId" method="post" class="d-inline" onsubmit="return confirm('Mark deal as Won?');">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="newStage" value="Won" />
+                    <button type="submit" class="btn btn-sm btn-success fw-semibold">Mark Deal Won</button>
+                </form>
+            }
+            @if (Model.Status != "Lost")
+            {
+                <form asp-action="ChangeStage" asp-route-id="@Model.OpportunityId" method="post" class="d-inline" onsubmit="return confirm('Mark deal as Lost?');">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="newStage" value="Lost" />
+                    <button type="submit" class="btn btn-sm btn-danger fw-semibold">Mark Deal Lost</button>
+                </form>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header">Financial & Forecast Metrics</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5 text-muted small">Opportunity Amount</dt>
+                    <dd class="col-sm-7 fw-bold fs-4 text-primary">@Model.Amount.ToString("C")</dd>
+
+                    <dt class="col-sm-5 text-muted small">Win Probability</dt>
+                    <dd class="col-sm-7 fw-semibold">@Model.Probability%</dd>
+
+                    <dt class="col-sm-5 text-muted small">Weighted Pipeline Value</dt>
+                    <dd class="col-sm-7 fw-bold fs-5 text-success">@Model.WeightedValue.ToString("C")</dd>
+
+                    <dt class="col-sm-5 text-muted small">Expected Close Date</dt>
+                    <dd class="col-sm-7">@Model.ExpectedCloseDate.ToString("dd MMMM yyyy")</dd>
+
+                    <dt class="col-sm-5 text-muted small">Created Date</dt>
+                    <dd class="col-sm-7">@Model.CreatedDate.ToString("f")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header">Linked Account & Owner</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5 text-muted small">Assigned Owner</dt>
+                    <dd class="col-sm-7"><span class="badge bg-light text-dark border">@(Model.AssignedTo ?? "Unassigned")</span></dd>
+
+                    <dt class="col-sm-5 text-muted small">Customer</dt>
+                    <dd class="col-sm-7">
+                        @if (Model.Customer != null)
+                        {
+                            <a asp-controller="Customer" asp-action="Details" asp-route-id="@Model.CustomerId" class="fw-semibold text-decoration-none">
+                                <i class="bi bi-building me-1"></i> @Model.Customer.CustomerName
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Not linked</span>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-5 text-muted small">Originating Lead</dt>
+                    <dd class="col-sm-7">
+                        @if (Model.Lead != null)
+                        {
+                            <a asp-controller="Lead" asp-action="Details" asp-route-id="@Model.LeadId" class="fw-semibold text-decoration-none">
+                                <i class="bi bi-funnel me-1"></i> @Model.Lead.LeadName
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Direct opportunity</span>
+                        }
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>

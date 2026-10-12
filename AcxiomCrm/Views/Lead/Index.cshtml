@@ -1,0 +1,139 @@
+@model AcxiomCrm.ViewModels.Leads.LeadListViewModel
+
+@{
+    ViewData["Title"] = "Leads";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 fw-bold mb-1">Lead Management</h2>
+        <p class="text-muted small mb-0">Capture prospective sales leads, qualify deals, and track lifecycle status</p>
+    </div>
+    <a asp-action="Create" class="btn btn-primary btn-sm px-3 shadow-sm">
+        <i class="bi bi-plus-circle me-1"></i> Add Lead
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body p-3">
+        <form method="get" asp-action="Index" class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" value="@Model.SearchTerm" class="form-control" placeholder="Search by name, company, email, phone..." />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select">
+                    <option value="">All Statuses</option>
+                    <option value="New" selected="@(Model.StatusFilter == "New")">New</option>
+                    <option value="Contacted" selected="@(Model.StatusFilter == "Contacted")">Contacted</option>
+                    <option value="Qualified" selected="@(Model.StatusFilter == "Qualified")">Qualified</option>
+                    <option value="Unqualified" selected="@(Model.StatusFilter == "Unqualified")">Unqualified</option>
+                    <option value="Converted" selected="@(Model.StatusFilter == "Converted")">Converted</option>
+                    <option value="Lost" selected="@(Model.StatusFilter == "Lost")">Lost</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="source" class="form-select">
+                    <option value="">All Sources</option>
+                    <option value="Website" selected="@(Model.SourceFilter == "Website")">Website</option>
+                    <option value="Referral" selected="@(Model.SourceFilter == "Referral")">Referral</option>
+                    <option value="Cold Call" selected="@(Model.SourceFilter == "Cold Call")">Cold Call</option>
+                    <option value="Advertisement" selected="@(Model.SourceFilter == "Advertisement")">Advertisement</option>
+                    <option value="Partner" selected="@(Model.SourceFilter == "Partner")">Partner</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100">Filter</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Lead Name</th>
+                    <th>Contact Info</th>
+                    <th>Company</th>
+                    <th>Source</th>
+                    <th>Status</th>
+                    <th>Expected Value</th>
+                    <th>Assigned To</th>
+                    <th class="text-end pe-3">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Leads.Any())
+                {
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-muted">
+                            <i class="bi bi-funnel fs-2 d-block mb-1"></i>
+                            No lead records found.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var l in Model.Leads)
+                    {
+                        var statusClass = l.Status switch
+                        {
+                            "New" => "bg-primary",
+                            "Contacted" => "bg-warning text-dark",
+                            "Qualified" => "bg-info text-dark",
+                            "Converted" => "bg-success",
+                            "Unqualified" => "bg-secondary",
+                            "Lost" => "bg-danger",
+                            _ => "bg-secondary"
+                        };
+
+                        <tr>
+                            <td class="fw-semibold text-primary">@l.LeadCode</td>
+                            <td class="fw-bold">
+                                <a asp-action="Details" asp-route-id="@l.LeadId" class="text-dark text-decoration-none">
+                                    @l.LeadName
+                                </a>
+                            </td>
+                            <td>
+                                <div><i class="bi bi-envelope me-1 text-muted small"></i>@l.Email</div>
+                                <div class="text-muted small"><i class="bi bi-telephone me-1"></i>@l.Phone</div>
+                            </td>
+                            <td>@(l.CompanyName ?? "-")</td>
+                            <td><span class="badge bg-light text-dark border">@l.Source</span></td>
+                            <td>
+                                <span class="badge @statusClass">@l.Status</span>
+                            </td>
+                            <td class="fw-semibold">@l.ExpectedValue.ToString("C")</td>
+                            <td class="small text-muted">@(l.AssignedTo ?? "Unassigned")</td>
+                            <td class="text-end pe-3">
+                                <div class="btn-group btn-group-sm">
+                                    <a asp-action="Details" asp-route-id="@l.LeadId" class="btn btn-outline-secondary" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    @if (l.Status != "Converted")
+                                    {
+                                        <a asp-action="Edit" asp-route-id="@l.LeadId" class="btn btn-outline-primary" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        @if (l.Status == "Qualified")
+                                        {
+                                            <a asp-action="Convert" asp-route-id="@l.LeadId" class="btn btn-outline-success" title="Convert to Customer">
+                                                <i class="bi bi-check-circle"></i>
+                                            </a>
+                                        }
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

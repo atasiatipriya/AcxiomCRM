@@ -1,0 +1,294 @@
+@model AcxiomCrm.ViewModels.Reports.ReportsIndexViewModel
+
+@{
+    ViewData["Title"] = "Reports & Analytics";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+        <h2 class="h4 fw-bold mb-1">
+            <i class="bi bi-file-earmark-bar-graph text-primary me-2"></i>Reports & Analytics
+        </h2>
+        <p class="text-muted small mb-0">Role-scoped CRM reporting, pipeline analysis, and operational audit data</p>
+    </div>
+    <div>
+        <a asp-action="Export" 
+           asp-route-reportType="@Model.ActiveReport" 
+           asp-route-fromDate="@(Model.FromDate?.ToString("yyyy-MM-dd"))" 
+           asp-route-toDate="@(Model.ToDate?.ToString("yyyy-MM-dd"))" 
+           asp-route-statusFilter="@Model.StatusFilter" 
+           class="btn btn-outline-success btn-sm px-3 shadow-sm">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export to CSV
+        </a>
+    </div>
+</div>
+
+<!-- Summary Metrics Bar -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm p-3">
+            <div class="small text-muted text-uppercase fw-bold">Total In Scope</div>
+            <div class="h4 fw-bold mb-0 text-primary">@Model.TotalOpportunities Deals</div>
+            <div class="small text-muted mt-1">@Model.TotalLeads Leads &bull; @Model.TotalCustomers Customers</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm p-3">
+            <div class="small text-muted text-uppercase fw-bold">Active Pipeline Value</div>
+            <div class="h4 fw-bold mb-0 text-success">₹@Model.TotalPipelineValue.ToString("N0")</div>
+            <div class="small text-muted mt-1">Sum of open opportunities</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm p-3">
+            <div class="small text-muted text-uppercase fw-bold">Weighted Pipeline</div>
+            <div class="h4 fw-bold mb-0 text-info">₹@Model.TotalWeightedValue.ToString("N0")</div>
+            <div class="small text-muted mt-1">Probability-adjusted revenue</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm p-3">
+            <div class="small text-muted text-uppercase fw-bold">Total Activities</div>
+            <div class="h4 fw-bold mb-0 text-warning">@Model.TotalFollowUps Follow-Ups</div>
+            <div class="small text-muted mt-1">Customer & lead touchpoints</div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Navigation Tabs -->
+<ul class="nav nav-pills mb-3 gap-2">
+    <li class="nav-item">
+        <a class="nav-link @(Model.ActiveReport == "Pipeline" ? "active" : "bg-light text-dark")" 
+           asp-action="Index" asp-route-reportType="Pipeline">
+            <i class="bi bi-briefcase me-1"></i> Pipeline Report
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model.ActiveReport == "Leads" ? "active" : "bg-light text-dark")" 
+           asp-action="Index" asp-route-reportType="Leads">
+            <i class="bi bi-funnel me-1"></i> Lead Conversion Report
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model.ActiveReport == "Customers" ? "active" : "bg-light text-dark")" 
+           asp-action="Index" asp-route-reportType="Customers">
+            <i class="bi bi-people me-1"></i> Customer Master Report
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model.ActiveReport == "FollowUps" ? "active" : "bg-light text-dark")" 
+           asp-action="Index" asp-route-reportType="FollowUps">
+            <i class="bi bi-calendar-check me-1"></i> Follow-Up Activity Report
+        </a>
+    </li>
+</ul>
+
+<!-- Filter Toolbar -->
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-body p-3">
+        <form method="get" asp-action="Index" class="row g-2 align-items-end">
+            <input type="hidden" name="reportType" value="@Model.ActiveReport" />
+            
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-muted mb-1">From Date</label>
+                <input type="date" name="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" class="form-control form-control-sm" />
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-muted mb-1">To Date</label>
+                <input type="date" name="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="form-control form-control-sm" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-muted mb-1">Status Filter</label>
+                <input type="text" name="statusFilter" value="@Model.StatusFilter" class="form-control form-control-sm" placeholder="e.g. Active, Open, Won, New..." />
+            </div>
+
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="bi bi-funnel me-1"></i> Filter
+                </button>
+                <a asp-action="Index" asp-route-reportType="@Model.ActiveReport" class="btn btn-outline-secondary btn-sm">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Report Table Container -->
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        @if (Model.ActiveReport == "Pipeline")
+        {
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Opportunity</th>
+                        <th>Customer</th>
+                        <th>Amount</th>
+                        <th>Stage</th>
+                        <th>Probability</th>
+                        <th>Weighted Value</th>
+                        <th>Expected Close</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.OpportunityRows.Any())
+                    {
+                        <tr><td colspan="8" class="text-center py-4 text-muted">No opportunity records match the selected criteria.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var opp in Model.OpportunityRows)
+                        {
+                            var stageBadge = opp.Stage switch
+                            {
+                                "Won" => "bg-success",
+                                "Lost" => "bg-danger",
+                                "Negotiation" => "bg-info text-dark",
+                                "Proposal" => "bg-warning text-dark",
+                                _ => "bg-primary"
+                            };
+
+                            <tr>
+                                <td class="fw-bold">@opp.OpportunityName</td>
+                                <td>@(opp.CustomerName ?? "-")</td>
+                                <td class="fw-semibold">₹@opp.Amount.ToString("N0")</td>
+                                <td><span class="badge @stageBadge">@opp.Stage</span></td>
+                                <td>@opp.Probability%</td>
+                                <td class="text-success fw-bold">₹@opp.WeightedValue.ToString("N0")</td>
+                                <td class="small text-muted">@opp.ExpectedCloseDate.ToString("dd MMM yyyy")</td>
+                                <td>
+                                    <span class="badge @(opp.Status == "Open" ? "bg-primary" : opp.Status == "Won" ? "bg-success" : "bg-secondary")">
+                                        @opp.Status
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        }
+        else if (Model.ActiveReport == "Leads")
+        {
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Code</th>
+                        <th>Lead Name</th>
+                        <th>Email & Phone</th>
+                        <th>Source</th>
+                        <th>Status</th>
+                        <th>Expected Value</th>
+                        <th>Created Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.LeadRows.Any())
+                    {
+                        <tr><td colspan="7" class="text-center py-4 text-muted">No lead records found.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var lead in Model.LeadRows)
+                        {
+                            <tr>
+                                <td class="font-monospace small">@lead.LeadCode</td>
+                                <td class="fw-bold">@lead.LeadName</td>
+                                <td class="small">
+                                    <div>@lead.Email</div>
+                                    <div class="text-muted">@lead.Phone</div>
+                                </td>
+                                <td>@(lead.Source ?? "-")</td>
+                                <td><span class="badge bg-secondary">@lead.Status</span></td>
+                                <td class="fw-semibold">₹@lead.ExpectedValue.ToString("N0")</td>
+                                <td class="small text-muted">@lead.CreatedDate.ToString("dd MMM yyyy")</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        }
+        else if (Model.ActiveReport == "Customers")
+        {
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Code</th>
+                        <th>Customer Name</th>
+                        <th>Email & Phone</th>
+                        <th>Company</th>
+                        <th>Status</th>
+                        <th>Created Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.CustomerRows.Any())
+                    {
+                        <tr><td colspan="6" class="text-center py-4 text-muted">No customer records found.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var c in Model.CustomerRows)
+                        {
+                            <tr>
+                                <td class="font-monospace small">@c.CustomerCode</td>
+                                <td class="fw-bold">@c.CustomerName</td>
+                                <td class="small">
+                                    <div>@c.Email</div>
+                                    <div class="text-muted">@c.Phone</div>
+                                </td>
+                                <td>@(c.CompanyName ?? "-")</td>
+                                <td>
+                                    <span class="badge @(c.Status == "Active" ? "bg-success" : "bg-secondary")">
+                                        @c.Status
+                                    </span>
+                                </td>
+                                <td class="small text-muted">@c.CreatedDate.ToString("dd MMM yyyy")</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        }
+        else if (Model.ActiveReport == "FollowUps")
+        {
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Remarks / Purpose</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Target (Customer / Lead)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.FollowUpRows.Any())
+                    {
+                        <tr><td colspan="5" class="text-center py-4 text-muted">No follow-up activity records found.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var fu in Model.FollowUpRows)
+                        {
+                            <tr>
+                                <td class="small fw-semibold">@fu.FollowUpDate.ToString("dd MMM yyyy hh:mm tt")</td>
+                                <td>@(string.IsNullOrWhiteSpace(fu.Remarks) ? "-" : fu.Remarks)</td>
+                                <td><span class="badge bg-light text-dark border">@fu.FollowUpType</span></td>
+                                <td>
+                                    <span class="badge @(fu.Status == "Completed" ? "bg-success" : "bg-warning text-dark")">
+                                        @fu.Status
+                                    </span>
+                                </td>
+                                <td>@fu.TargetName</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

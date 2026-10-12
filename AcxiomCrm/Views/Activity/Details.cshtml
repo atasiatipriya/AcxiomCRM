@@ -1,0 +1,95 @@
+@model AcxiomCrm.Models.Activity
+
+@{
+    ViewData["Title"] = "Activity: " + Model.Subject;
+
+    var icon = Model.ActivityType switch
+    {
+        "Call" => "bi-telephone text-primary",
+        "Meeting" => "bi-people text-success",
+        "Email" => "bi-envelope text-info",
+        "Task" => "bi-check2-square text-warning",
+        _ => "bi-dot text-secondary"
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 fw-bold mb-1">
+            <i class="bi @icon me-1"></i> @Model.Subject
+        </h2>
+        <span class="badge bg-light text-dark border">@Model.ActivityType</span>
+        <span class="badge @(Model.Status == "Completed" ? "bg-success" : "bg-warning text-dark") ms-1">@Model.Status</span>
+    </div>
+    <div class="d-flex gap-2">
+        <form asp-action="ToggleStatus" asp-route-id="@Model.ActivityId" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-outline-secondary btn-sm">
+                Mark as @(Model.Status == "Completed" ? "Pending" : "Completed")
+            </button>
+        </form>
+        <a asp-action="Edit" asp-route-id="@Model.ActivityId" class="btn btn-primary btn-sm">
+            <i class="bi bi-pencil me-1"></i> Edit Activity
+        </a>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Back to Activities
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-8">
+        <div class="card shadow-sm h-100">
+            <div class="card-header">Activity Description & Content</div>
+            <div class="card-body">
+                <p class="text-secondary" style="white-space: pre-wrap;">@(string.IsNullOrWhiteSpace(Model.Description) ? "No detailed description entered." : Model.Description)</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header">Activity Metadata</div>
+            <div class="card-body">
+                <dl class="mb-0">
+                    <dt class="text-muted small">Date & Time</dt>
+                    <dd class="fw-semibold">@Model.ActivityDate.ToString("f")</dd>
+
+                    <dt class="text-muted small">Assigned Sales Executive</dt>
+                    <dd><span class="badge bg-light text-dark border">@(Model.AssignedTo ?? "Unassigned")</span></dd>
+
+                    <dt class="text-muted small">Linked Customer</dt>
+                    <dd>
+                        @if (Model.Customer != null)
+                        {
+                            <a asp-controller="Customer" asp-action="Details" asp-route-id="@Model.CustomerId" class="fw-semibold text-decoration-none">
+                                <i class="bi bi-building me-1"></i> @Model.Customer.CustomerName
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="text-muted">None</span>
+                        }
+                    </dd>
+
+                    <dt class="text-muted small">Linked Lead</dt>
+                    <dd>
+                        @if (Model.Lead != null)
+                        {
+                            <a asp-controller="Lead" asp-action="Details" asp-route-id="@Model.LeadId" class="fw-semibold text-decoration-none text-warning">
+                                <i class="bi bi-funnel me-1"></i> @Model.Lead.LeadName
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="text-muted">None</span>
+                        }
+                    </dd>
+
+                    <dt class="text-muted small">Recorded On</dt>
+                    <dd class="small text-muted">@Model.CreatedDate.ToString("g")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>

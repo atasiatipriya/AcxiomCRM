@@ -1,0 +1,189 @@
+@model AcxiomCrm.ViewModels.Opportunities.OpportunityListViewModel
+
+@{
+    ViewData["Title"] = "Sales Opportunities";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 fw-bold mb-1">Opportunity & Pipeline Management</h2>
+        <p class="text-muted small mb-0">Track active deals, monitor stage progression, and forecast weighted pipeline revenue</p>
+    </div>
+    <a asp-action="Create" class="btn btn-primary btn-sm px-3 shadow-sm">
+        <i class="bi bi-plus-circle me-1"></i> Add Opportunity
+    </a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-2 col-6">
+        <div class="card shadow-sm h-100 kpi-card">
+            <div class="card-body p-3">
+                <span class="text-muted small text-uppercase fw-bold">Total Deals</span>
+                <h4 class="fw-bold mb-0 text-dark">@Model.TotalCount</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6">
+        <div class="card shadow-sm h-100 kpi-card border-primary border-2">
+            <div class="card-body p-3">
+                <span class="text-muted small text-uppercase fw-bold text-primary">Open Deals</span>
+                <h4 class="fw-bold mb-0 text-primary">@Model.OpenCount</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6">
+        <div class="card shadow-sm h-100 kpi-card border-success border-2">
+            <div class="card-body p-3">
+                <span class="text-muted small text-uppercase fw-bold text-success">Won</span>
+                <h4 class="fw-bold mb-0 text-success">@Model.WonCount</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6">
+        <div class="card shadow-sm h-100 kpi-card border-danger border-2">
+            <div class="card-body p-3">
+                <span class="text-muted small text-uppercase fw-bold text-danger">Lost</span>
+                <h4 class="fw-bold mb-0 text-danger">@Model.LostCount</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6">
+        <div class="card shadow-sm h-100 kpi-card bg-light">
+            <div class="card-body p-3">
+                <span class="text-muted small text-uppercase fw-bold">Pipeline Value</span>
+                <h5 class="fw-bold mb-0 text-primary">@Model.TotalPipelineValue.ToString("C")</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6">
+        <div class="card shadow-sm h-100 kpi-card bg-light">
+            <div class="card-body p-3">
+                <span class="text-muted small text-uppercase fw-bold">Weighted Value</span>
+                <h5 class="fw-bold mb-0 text-success">@Model.WeightedPipelineValue.ToString("C")</h5>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body p-3">
+        <form method="get" asp-action="Index" class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" value="@Model.SearchTerm" class="form-control" placeholder="Search by deal or client name..." />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="stage" class="form-select">
+                    <option value="">All Stages</option>
+                    <option value="Qualification" selected="@(Model.StageFilter == "Qualification")">Qualification</option>
+                    <option value="Proposal" selected="@(Model.StageFilter == "Proposal")">Proposal</option>
+                    <option value="Negotiation" selected="@(Model.StageFilter == "Negotiation")">Negotiation</option>
+                    <option value="Won" selected="@(Model.StageFilter == "Won")">Won</option>
+                    <option value="Lost" selected="@(Model.StageFilter == "Lost")">Lost</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select">
+                    <option value="">All Statuses</option>
+                    <option value="Open" selected="@(Model.StatusFilter == "Open")">Open</option>
+                    <option value="Won" selected="@(Model.StatusFilter == "Won")">Won</option>
+                    <option value="Lost" selected="@(Model.StatusFilter == "Lost")">Lost</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100">Filter</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Opportunity</th>
+                    <th>Account / Prospect</th>
+                    <th>Amount</th>
+                    <th>Stage</th>
+                    <th>Probability</th>
+                    <th>Weighted Value</th>
+                    <th>Close Date</th>
+                    <th>Status</th>
+                    <th class="text-end pe-3">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Opportunities.Any())
+                {
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-muted">
+                            <i class="bi bi-graph-up-arrow fs-2 d-block mb-1"></i>
+                            No sales opportunities found.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var opp in Model.Opportunities)
+                    {
+                        var stageBadge = opp.Stage switch
+                        {
+                            "Qualification" => "bg-primary",
+                            "Proposal" => "bg-info text-dark",
+                            "Negotiation" => "bg-warning text-dark",
+                            "Won" => "bg-success",
+                            "Lost" => "bg-danger",
+                            _ => "bg-secondary"
+                        };
+
+                        <tr>
+                            <td class="fw-bold">
+                                <a asp-action="Details" asp-route-id="@opp.OpportunityId" class="text-dark text-decoration-none">
+                                    @opp.OpportunityName
+                                </a>
+                            </td>
+                            <td>
+                                @if (opp.Customer != null)
+                                {
+                                    <div><i class="bi bi-building me-1 text-primary"></i>@opp.Customer.CustomerName</div>
+                                }
+                                else if (opp.Lead != null)
+                                {
+                                    <div><i class="bi bi-funnel me-1 text-warning"></i>@opp.Lead.LeadName</div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                            <td class="fw-bold">@opp.Amount.ToString("C")</td>
+                            <td><span class="badge @stageBadge">@opp.Stage</span></td>
+                            <td>@opp.Probability%</td>
+                            <td class="fw-semibold text-muted">@opp.WeightedValue.ToString("C")</td>
+                            <td class="small text-muted">@opp.ExpectedCloseDate.ToString("dd MMM yyyy")</td>
+                            <td>
+                                <span class="badge @(opp.Status == "Won" ? "bg-success" : opp.Status == "Lost" ? "bg-danger" : "bg-light text-dark border")">
+                                    @opp.Status
+                                </span>
+                            </td>
+                            <td class="text-end pe-3">
+                                <div class="btn-group btn-group-sm">
+                                    <a asp-action="Details" asp-route-id="@opp.OpportunityId" class="btn btn-outline-secondary" title="Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@opp.OpportunityId" class="btn btn-outline-primary" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,136 @@
+@model AcxiomCrm.ViewModels.Users.UserListViewModel
+
+@{
+    ViewData["Title"] = "User & Role Management";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 fw-bold mb-1">User & Role Management</h2>
+        <p class="text-muted small mb-0">System administrator portal for user provisioning, role assignments, and security lockout status</p>
+    </div>
+    <a asp-action="Create" class="btn btn-primary btn-sm px-3 shadow-sm">
+        <i class="bi bi-person-plus-fill me-1"></i> Create User
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body p-3">
+        <form method="get" asp-action="Index" class="row g-2 align-items-center">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" value="@Model.SearchTerm" class="form-control" placeholder="Search by name or email..." />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="role" class="form-select">
+                    <option value="">All Roles</option>
+                    <option value="Admin" selected="@(Model.RoleFilter == "Admin")">Admin</option>
+                    <option value="Manager" selected="@(Model.RoleFilter == "Manager")">Manager</option>
+                    <option value="SalesExecutive" selected="@(Model.RoleFilter == "SalesExecutive")">Sales Executive</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100">Filter</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Account Status</th>
+                    <th>Lockout Status</th>
+                    <th>Failed Attempts</th>
+                    <th>Created Date</th>
+                    <th class="text-end pe-3">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Users.Any())
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            <i class="bi bi-person-gear fs-2 d-block mb-1"></i>
+                            No users found.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var u in Model.Users)
+                    {
+                        var roleBadge = u.Role switch
+                        {
+                            "Admin" => "bg-danger",
+                            "Manager" => "bg-primary",
+                            "SalesExecutive" => "bg-success",
+                            _ => "bg-secondary"
+                        };
+
+                        <tr>
+                            <td>
+                                <div class="fw-bold">@u.FullName</div>
+                                <div class="small text-muted">@u.Email</div>
+                            </td>
+                            <td><span class="badge @roleBadge">@u.Role</span></td>
+                            <td>
+                                <span class="badge @(u.IsActive ? "bg-success" : "bg-secondary")">
+                                    @(u.IsActive ? "Active" : "Inactive")
+                                </span>
+                            </td>
+                            <td>
+                                @if (u.IsLockedOut)
+                                {
+                                    <div>
+                                        <span class="badge bg-danger">Locked Out</span>
+                                        <div class="small text-danger mt-1">Until: @u.LockoutEnd?.ToString("hh:mm tt")</div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-dark border">Normal</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge @(u.AccessFailedCount > 0 ? "bg-warning text-dark" : "bg-light text-muted border")">
+                                    @u.AccessFailedCount / 5
+                                </span>
+                            </td>
+                            <td class="small text-muted">@u.CreatedDate.ToString("dd MMM yyyy")</td>
+                            <td class="text-end pe-3">
+                                <div class="btn-group btn-group-sm">
+                                    @if (u.IsLockedOut)
+                                    {
+                                        <form asp-action="Unlock" asp-route-id="@u.Id" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-warning text-dark" title="Unlock Account">
+                                                <i class="bi bi-unlock"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    <form asp-action="ToggleStatus" asp-route-id="@u.Id" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn @(u.IsActive ? "btn-outline-danger" : "btn-outline-success")" title="@(u.IsActive ? "Deactivate" : "Activate")">
+                                            <i class="bi @(u.IsActive ? "bi-person-x" : "bi-person-check")"></i>
+                                        </button>
+                                    </form>
+                                    <a asp-action="Edit" asp-route-id="@u.Id" class="btn btn-outline-primary" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

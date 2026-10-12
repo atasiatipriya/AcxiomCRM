@@ -1,0 +1,210 @@
+@model AcxiomCrm.ViewModels.AuditLogs.AuditLogFilterViewModel
+
+@{
+    ViewData["Title"] = "System Audit Logs";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 fw-bold mb-1">
+            <i class="bi bi-shield-check text-primary me-2"></i>System Audit Logs
+        </h2>
+        <p class="text-muted small mb-0">Append-only immutable audit trail capturing user activities, status changes, and record histories</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-secondary px-3 py-2">
+            <i class="bi bi-list-check me-1"></i> Total Events: @Model.TotalLogs
+        </span>
+    </div>
+</div>
+
+<div class="card mb-4 shadow-sm border-0">
+    <div class="card-body p-3">
+        <form method="get" asp-action="Index" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-muted mb-1">User Identifier</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
+                    <input type="text" name="userId" value="@Model.UserId" class="form-control" placeholder="Search user ID/email..." />
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted mb-1">Action</label>
+                <select name="actionType" class="form-select form-select-sm">
+                    <option value="">All Actions</option>
+                    <option value="Create" selected="@(Model.Action == "Create")">Create</option>
+                    <option value="Update" selected="@(Model.Action == "Update")">Update</option>
+                    <option value="Delete" selected="@(Model.Action == "Delete")">Delete</option>
+                    <option value="StatusChange" selected="@(Model.Action == "StatusChange")">StatusChange</option>
+                    <option value="Convert" selected="@(Model.Action == "Convert")">Convert</option>
+                    <option value="Login" selected="@(Model.Action == "Login")">Login</option>
+                    <option value="Deactivate" selected="@(Model.Action == "Deactivate")">Deactivate</option>
+                    <option value="Activate" selected="@(Model.Action == "Activate")">Activate</option>
+                    <option value="Unlock" selected="@(Model.Action == "Unlock")">Unlock</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted mb-1">Entity / Module</label>
+                <select name="entityName" class="form-select form-select-sm">
+                    <option value="">All Entities</option>
+                    <option value="Customer" selected="@(Model.EntityName == "Customer")">Customer</option>
+                    <option value="Lead" selected="@(Model.EntityName == "Lead")">Lead</option>
+                    <option value="Opportunity" selected="@(Model.EntityName == "Opportunity")">Opportunity</option>
+                    <option value="FollowUp" selected="@(Model.EntityName == "FollowUp")">FollowUp</option>
+                    <option value="Activity" selected="@(Model.EntityName == "Activity")">Activity</option>
+                    <option value="ApplicationUser" selected="@(Model.EntityName == "ApplicationUser")">ApplicationUser</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted mb-1">From Date</label>
+                <input type="date" name="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted mb-1">To Date</label>
+                <input type="date" name="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-1 d-flex gap-1">
+                <button type="submit" class="btn btn-primary btn-sm w-100" title="Apply Filters">
+                    <i class="bi bi-funnel"></i>
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm" title="Reset Filters">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 170px;">Timestamp (UTC)</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Entity</th>
+                    <th>Record ID</th>
+                    <th>Details</th>
+                    <th>IP Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Logs.Any())
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-journal-x fs-2 d-block mb-2"></i>
+                            No audit log events match the specified filter criteria.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var log in Model.Logs)
+                    {
+                        var badgeClass = log.Action switch
+                        {
+                            "Create" => "bg-success",
+                            "Update" => "bg-primary",
+                            "Delete" => "bg-danger",
+                            "Convert" => "bg-info text-dark",
+                            "StatusChange" => "bg-warning text-dark",
+                            "Deactivate" => "bg-danger",
+                            "Activate" => "bg-success",
+                            "Unlock" => "bg-warning text-dark",
+                            _ => "bg-secondary"
+                        };
+
+                        <tr>
+                            <td class="small text-muted font-monospace">
+                                @log.CreatedDate.ToString("dd MMM yyyy HH:mm:ss")
+                            </td>
+                            <td>
+                                <span class="fw-semibold small">
+                                    @(string.IsNullOrWhiteSpace(log.UserId) ? "System" : log.UserId)
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge @badgeClass">@log.Action</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">@log.EntityName</span>
+                            </td>
+                            <td class="font-monospace small text-muted">
+                                @(string.IsNullOrWhiteSpace(log.RecordId) ? "-" : log.RecordId)
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(log.OldValue) || !string.IsNullOrWhiteSpace(log.NewValue))
+                                {
+                                    <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" data-bs-toggle="modal" data-bs-target="#logModal_@log.AuditLogId">
+                                        <i class="bi bi-eye me-1"></i> View Diff
+                                    </button>
+
+                                    <!-- Modal for viewing audit details -->
+                                    <div class="modal fade" id="logModal_@log.AuditLogId" tabindex="-1" aria-labelledby="modalLabel_@log.AuditLogId" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title h6 fw-bold" id="modalLabel_@log.AuditLogId">
+                                                        Audit Log Event #@log.AuditLogId Details
+                                                    </h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="row g-2 mb-3 small">
+                                                        <div class="col-sm-6">
+                                                            <strong>Entity:</strong> @log.EntityName (ID: @log.RecordId)
+                                                        </div>
+                                                        <div class="col-sm-6">
+                                                            <strong>Action:</strong> <span class="badge @badgeClass">@log.Action</span>
+                                                        </div>
+                                                        <div class="col-sm-6">
+                                                            <strong>User:</strong> @log.UserId
+                                                        </div>
+                                                        <div class="col-sm-6">
+                                                            <strong>Date:</strong> @log.CreatedDate.ToString("dd MMM yyyy HH:mm:ss")
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="row g-3">
+                                                        <div class="col-md-6">
+                                                            <div class="border rounded p-2 bg-light h-100">
+                                                                <h6 class="small fw-bold text-danger border-bottom pb-1 mb-2">
+                                                                    <i class="bi bi-dash-circle me-1"></i> Previous State
+                                                                </h6>
+                                                                <pre class="small text-muted mb-0" style="white-space: pre-wrap; word-break: break-all; max-height: 250px; overflow-y: auto;">@(string.IsNullOrWhiteSpace(log.OldValue) ? "(None)" : log.OldValue)</pre>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="border rounded p-2 bg-light h-100">
+                                                                <h6 class="small fw-bold text-success border-bottom pb-1 mb-2">
+                                                                    <i class="bi bi-plus-circle me-1"></i> New State
+                                                                </h6>
+                                                                <pre class="small text-muted mb-0" style="white-space: pre-wrap; word-break: break-all; max-height: 250px; overflow-y: auto;">@(string.IsNullOrWhiteSpace(log.NewValue) ? "(None)" : log.NewValue)</pre>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">-</span>
+                                }
+                            </td>
+                            <td class="font-monospace small text-muted">
+                                @(string.IsNullOrWhiteSpace(log.IpAddress) ? "N/A" : log.IpAddress)
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
